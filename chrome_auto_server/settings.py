@@ -46,7 +46,7 @@ class Settings(BaseSettings):
     db_port: int = 5432
     db_user: str = "chrome_auto_server"
     db_pass: str = "chrome_auto_server"
-    db_base: str = "admin"
+    db_base: str = "chrome_auto_server"
     db_echo: bool = False
 
     # Variables for Redis
