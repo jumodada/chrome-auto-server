@@ -1,0 +1,70 @@
+services:
+  api: &main_app
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    image: chrome_auto_server:${CHROME_AUTO_SERVER_VERSION:-latest}
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      CHROME_AUTO_SERVER_HOST: 0.0.0.0
+      CHROME_AUTO_SERVER_DB_HOST: chrome_auto_server-db
+      CHROME_AUTO_SERVER_DB_PORT: 5432
+      CHROME_AUTO_SERVER_DB_USER: chrome_auto_server
+      CHROME_AUTO_SERVER_DB_PASS: chrome_auto_server
+      CHROME_AUTO_SERVER_DB_BASE: chrome_auto_server
+      CHROME_AUTO_SERVER_REDIS_HOST: chrome_auto_server-redis
+
+  db:
+    image: postgres:16.3-bullseye
+    hostname: chrome_auto_server-db
+    environment:
+      POSTGRES_PASSWORD: "chrome_auto_server"
+      POSTGRES_USER: "chrome_auto_server"
+      POSTGRES_DB: "chrome_auto_server"
+    volumes:
+      - chrome_auto_server-db-data:/var/lib/postgresql/data
+    restart: always
+    healthcheck:
+      test: pg_isready -U chrome_auto_server
+      interval: 2s
+      timeout: 3s
+      retries: 40
+
+  migrator:
+    image: chrome_auto_server:${CHROME_AUTO_SERVER_VERSION:-latest}
+    restart: "no"
+    command: alembic upgrade head
+    environment:
+      CHROME_AUTO_SERVER_DB_HOST: chrome_auto_server-db
+      CHROME_AUTO_SERVER_DB_PORT: 5432
+      CHROME_AUTO_SERVER_DB_USER: chrome_auto_server
+      CHROME_AUTO_SERVER_DB_PASS: chrome_auto_server
+      CHROME_AUTO_SERVER_DB_BASE: chrome_auto_server
+    depends_on:
+      db:
+        condition: service_healthy
+
+  redis:
+    image: bitnami/redis:6.2.5
+    hostname: "chrome_auto_server-redis"
+    restart: always
+    environment:
+      ALLOW_EMPTY_PASSWORD: "yes"
+    healthcheck:
+      test: redis-cli ping
+      interval: 1s
+      timeout: 3s
+      retries: 50
+
+
+
+volumes:
+  chrome_auto_server-db-data:
+    name: chrome_auto_server-db-data
