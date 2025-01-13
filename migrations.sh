@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 生成迁移文件
-if alembic revision; then
+if alembic revision --autogenerate; then
     echo "成功生成迁移文件"
     # 执行迁移
     if alembic upgrade head; then
