@@ -42,7 +42,7 @@ services:
   migrator:
     image: chrome_auto_server:${CHROME_AUTO_SERVER_VERSION:-latest}
     restart: "no"
-    command: alembic revision --autogenerate -m "Auto generate migration"
+    command: sh migrations.sh
     environment:
       CHROME_AUTO_SERVER_DB_HOST: chrome_auto_server-db
       CHROME_AUTO_SERVER_DB_PORT: 5432
