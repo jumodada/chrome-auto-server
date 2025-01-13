@@ -2,7 +2,6 @@ from typing import Optional
 from pydantic import BaseModel
 from datetime import datetime
 
-
 class DanmakuCreate(BaseModel):
     """用于创建弹幕的模型."""
     content: str

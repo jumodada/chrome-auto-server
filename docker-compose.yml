@@ -42,13 +42,15 @@ services:
   migrator:
     image: chrome_auto_server:${CHROME_AUTO_SERVER_VERSION:-latest}
     restart: "no"
-    command: alembic upgrade head
+    command: sh migrations.sh
     environment:
       CHROME_AUTO_SERVER_DB_HOST: chrome_auto_server-db
       CHROME_AUTO_SERVER_DB_PORT: 5432
       CHROME_AUTO_SERVER_DB_USER: chrome_auto_server
       CHROME_AUTO_SERVER_DB_PASS: chrome_auto_server
       CHROME_AUTO_SERVER_DB_BASE: chrome_auto_server
+    volumes:
+      - ./chrome_auto_server/db/migrations/versions:/app/chrome_auto_server/db/migrations/versions
     depends_on:
       db:
         condition: service_healthy

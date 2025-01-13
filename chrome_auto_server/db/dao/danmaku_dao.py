@@ -28,7 +28,7 @@ class DanmakuDAO:
         return new_danmaku
 
     async def get_danmakus(self) -> List[DanmakuModel]:
+        """获取所有弹幕."""
         query = select(DanmakuModel).order_by(DanmakuModel.created_at.desc())
-        print(query)
         rows = await self.session.execute(query)
         return list(rows.scalars().all()) 
