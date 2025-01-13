@@ -1,5 +1,6 @@
-from datetime import datetime
+from typing import Optional
 from pydantic import BaseModel
+from datetime import datetime
 
 
 class DanmakuCreate(BaseModel):
@@ -18,3 +19,8 @@ class DanmakuModel(BaseModel):
     class Config:
         """配置."""
         from_attributes = True 
+
+class DanmakuResponse(BaseModel):
+    success: bool
+    message: str
+    data: Optional[DanmakuModel] = None 
