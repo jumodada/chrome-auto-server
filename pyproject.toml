@@ -20,6 +20,7 @@ fastapi-users-db-sqlalchemy = "^6.0.1"
 pydantic = "^2"
 pydantic-settings = "^2"
 yarl = "^1"
+DrissionPage = "^4.1.0.17"
 ujson = "^5.10.0"
 SQLAlchemy = {version = "^2.0.31", extras = ["asyncio"]}
 alembic = "^1.13.2"
