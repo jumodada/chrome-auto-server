@@ -9,4 +9,4 @@ class CookieCreate(BaseModel):
 class CookieResponse(BaseModel):
     success: bool
     message: str
-    data: Optional[Union[List[Dict[str, Any]], Dict[str, Any]]] = None 
+    data: Optional[List[Dict[str, Any]]] = None 
