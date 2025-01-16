@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List, Union
 
 class CookieCreate(BaseModel):
     domain: str
@@ -9,4 +9,4 @@ class CookieCreate(BaseModel):
 class CookieResponse(BaseModel):
     success: bool
     message: str
-    data: Optional[Dict[str, Any]] = None 
+    data: Optional[Union[List[Dict[str, Any]], Dict[str, Any]]] = None 

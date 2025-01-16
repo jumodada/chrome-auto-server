@@ -40,6 +40,9 @@ async def save_cookies(
     try:
         tab = browser.latest_tab
         cookies = tab.cookies()
+        # 将CookiesList转换为字典列表
+        
+        
         dao = CookieDAO(db)
         await dao.create_cookie(
             domain=cookie_data.domain,
