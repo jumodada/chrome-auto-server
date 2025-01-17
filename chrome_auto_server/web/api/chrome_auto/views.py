@@ -123,34 +123,18 @@ async def save_storage(
     db: AsyncSession = Depends(get_db_session),
 ) -> CookieResponse:  # 同样可以创建新的response schema
     try:
-        tab = browser.latest_tab
-        # 获取存储数据
-        storage_info = {}
-        
-        # 获取localStorage数据
-        js_code = '''
-            const storage = {};
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                storage[key] = localStorage.getItem(key);
-            }
-            return storage;
-        '''
-        local_storage = tab.run_js(js_code)
-        storage_info['localStorage'] = local_storage
-        
-        # 保存数据
+        # 直接保存请求体中的数据
         dao = StorageDAO(db)
         await dao.create_storage(
             domain=storage_data.domain,
             username=storage_data.username,
-            storage_data=storage_info,
+            storage_data=storage_data.cookie_data,  # 使用请求体中的数据
         )
         
         return CookieResponse(
             success=True,
             message="存储数据保存成功",
-            data=storage_info
+            data=storage_data.cookie_data
         )
     except Exception as e:
         return CookieResponse(

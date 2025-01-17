@@ -1,3 +1,4 @@
+import requests
 from DrissionPage import ChromiumOptions, Chromium
 import time
 import json
@@ -24,7 +25,9 @@ class DyMonitor:
         )
         self.browser = None
         self.target_url = 'https://buyin.jinritemai.com/dashboard'
-
+        # 添加API基础URL
+        self.api_base_url = 'http://localhost:8000'  # 根据实际情况修改
+        
     def start_browser(self):
         try:
             if self.browser is None:
@@ -34,7 +37,7 @@ class DyMonitor:
             logging.error(f"浏览器启动失败: {str(e)}")
             raise e
 
-    def get_page_data(self):
+    def get_and_send_data(self):
         try:
             tab = self.browser.latest_tab
             tab.get(url=self.target_url)
@@ -56,42 +59,59 @@ class DyMonitor:
             tab.run_js(js_code)
             window_data = tab.console.wait()
             
-            # 保存数据
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            # 准备发送到后端的数据
+            storage_data = json.loads(window_data.text) if window_data and window_data.text else {}
             
-            # 保存cookies
-            with open(f'data/cookies_{timestamp}.json', 'w', encoding='utf-8') as f:
-                json.dump(cookies, f, ensure_ascii=False, indent=2)
+            # 发送cookies到后端
+            cookie_payload = {
+                "domain": "buyin.jinritemai.com",
+                "username": "default_user",  # 可以根据需要修改
+                "cookie_data": cookies
+            }
             
-            # 保存window数据
-            if window_data and window_data.text:
-                with open(f'data/window_data_{timestamp}.json', 'w', encoding='utf-8') as f:
-                    json.dump(json.loads(window_data.text), f, ensure_ascii=False, indent=2)
+            # 发送storage数据到后端
+            storage_payload = {
+                "domain": "buyin.jinritemai.com",
+                "username": "default_user",  # 可以根据需要修改
+                "cookie_data": storage_data  # 这里复用了cookie_data字段
+            }
             
-            logging.info(f"数据获取成功，已保存至 data/cookies_{timestamp}.json 和 data/window_data_{timestamp}.json")
+            # 调用后端API
+            cookies_response = requests.post(
+                f"{self.api_base_url}/chrome/save-cookies",
+                json=cookie_payload
+            )
+            storage_response = requests.post(
+                f"{self.api_base_url}/chrome/save-storage",
+                json=storage_payload
+            )
             
-            # TODO: 这里可以添加数据处理逻辑
-            
-            return True
-            
+            if cookies_response.status_code == 200 and storage_response.status_code == 200:
+                logging.info("数据成功发送到后端")
+                return True
+            else:
+                logging.error(f"发送数据失败: Cookies状态码 {cookies_response.status_code}, Storage状态码 {storage_response.status_code}")
+                return False
+                
         except Exception as e:
-            logging.error(f"数据获取失败: {str(e)}")
+            logging.error(f"数据获取或发送失败: {str(e)}")
             return False
 
-    def run(self, interval=300):  # 默认5分钟运行一次
+    def run(self, interval=10):  # 修改默认间隔为10秒
         while True:
             try:
                 if self.browser is None:
                     self.start_browser()
                 
-                success = self.get_page_data()
+                success = self.get_and_send_data()
                 if not success:
                     # 如果失败，重启浏览器
                     if self.browser:
                         self.browser.quit()
                     self.browser = None
-                    
-                time.sleep(interval)
+                    time.sleep(60)  # 失败后等待1分钟再重试
+                else:
+                    time.sleep(interval)  # 成功后等待10秒
                 
             except Exception as e:
                 logging.error(f"运行出错: {str(e)}")
@@ -101,11 +121,5 @@ class DyMonitor:
                 time.sleep(60)  # 出错后等待1分钟再重试
 
 if __name__ == "__main__":
-    import os
-    
-    # 创建数据保存目录
-    if not os.path.exists('data'):
-        os.makedirs('data')
-        
     monitor = DyMonitor()
     monitor.run() 
