@@ -14,14 +14,12 @@ class StorageDAO:
         username: str,
         storage_data: dict,
     ) -> StorageModel:
-        """创建或更新存储记录"""
         query = select(StorageModel).where(
             StorageModel.domain == domain,
-            StorageModel.username == username
+            StorageModel.username == username,
         )
         result = await self.session.execute(query)
         existing_storage = result.scalar_one_or_none()
-
         if existing_storage:
             existing_storage.storage_data = storage_data
             await self.session.flush()

@@ -25,8 +25,7 @@ class DyMonitor:
         )
         self.browser = None
         self.target_url = 'https://buyin.jinritemai.com/dashboard'
-        # 添加API基础URL
-        self.api_base_url = 'http://localhost:8000'  # 根据实际情况修改
+        self.api_base_url = 'http://127.0.0.1:8000/api'  # 根据实际情况修改
         
     def start_browser(self):
         try:
@@ -42,41 +41,29 @@ class DyMonitor:
             tab = self.browser.latest_tab
             tab.get(url=self.target_url)
             
-            # 获取cookies
             cookies = tab.cookies()
+            if not cookies:
+                logging.warning("未获取到cookie数据")
+                return False
             
-            # 获取localStorage和其他数据
             tab.console.start()
-            js_code = '''
-                console.log(JSON.stringify({
-                    localStorage: Object.fromEntries(
-                        Object.keys(localStorage).map(key => [key, localStorage.getItem(key)])
-                    ),
-                    BTM_MAP_DATA: window.BTM_MAP_DATA,
-                    pageList: window.pageList,
-                }));
-            '''
-            tab.run_js(js_code)
-            window_data = tab.console.wait()
-            
-            # 准备发送到后端的数据
-            storage_data = json.loads(window_data.text) if window_data and window_data.text else {}
-            
-            # 发送cookies到后端
+            window_data = tab.local_storage()
+            if not window_data or not window_data:
+                logging.warning("未获取到localStorage数据")
+                return False
+                
+           
             cookie_payload = {
                 "domain": "buyin.jinritemai.com",
-                "username": "default_user",  # 可以根据需要修改
+                "username": "default_user",
                 "cookie_data": cookies
             }
-            
-            # 发送storage数据到后端
             storage_payload = {
                 "domain": "buyin.jinritemai.com",
-                "username": "default_user",  # 可以根据需要修改
-                "cookie_data": storage_data  # 这里复用了cookie_data字段
+                "username": "default_user",
+                "storage_data": window_data
             }
-            
-            # 调用后端API
+            print(f"{self.api_base_url}/chrome/save-cookies",)
             cookies_response = requests.post(
                 f"{self.api_base_url}/chrome/save-cookies",
                 json=cookie_payload
@@ -85,9 +72,10 @@ class DyMonitor:
                 f"{self.api_base_url}/chrome/save-storage",
                 json=storage_payload
             )
-            
             if cookies_response.status_code == 200 and storage_response.status_code == 200:
                 logging.info("数据成功发送到后端")
+                logging.info(f"Cookie数据大小: {len(str(cookies))} bytes")
+                logging.info(f"Storage数据大小: {len(str(window_data))} bytes")
                 return True
             else:
                 logging.error(f"发送数据失败: Cookies状态码 {cookies_response.status_code}, Storage状态码 {storage_response.status_code}")
@@ -102,14 +90,9 @@ class DyMonitor:
             try:
                 if self.browser is None:
                     self.start_browser()
-                
                 success = self.get_and_send_data()
                 if not success:
-                    # 如果失败，重启浏览器
-                    if self.browser:
-                        self.browser.quit()
-                    self.browser = None
-                    time.sleep(60)  # 失败后等待1分钟再重试
+                    time.sleep(10)  # 失败后等待1分钟再重试
                 else:
                     time.sleep(interval)  # 成功后等待10秒
                 
@@ -118,7 +101,7 @@ class DyMonitor:
                 if self.browser:
                     self.browser.quit()
                 self.browser = None
-                time.sleep(60)  # 出错后等待1分钟再重试
+                time.sleep(10)  # 出错后等待1分钟再重试
 
 if __name__ == "__main__":
     monitor = DyMonitor()

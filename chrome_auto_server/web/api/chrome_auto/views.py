@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from chrome_auto_server.db.dependencies import get_db_session
 from chrome_auto_server.db.dao.cookie_dao import CookieDAO
 from chrome_auto_server.db.dao.storage_dao import StorageDAO
-from chrome_auto_server.web.api.chrome_auto.schemas import CookieCreate, CookieResponse
+from chrome_auto_server.web.api.chrome_auto.schemas import CookieCreate, CookieResponse,StorageResponse,StorageCreate
 
 router = APIRouter()
 co = ChromiumOptions().set_browser_path(r'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome')
@@ -18,7 +18,6 @@ async def start_browser():
     try:
         tab = browser.latest_tab
         tab.get(url='https://buyin.jinritemai.com/dashboard') 
-        tab.set_cookie(name='code', value='652c6ee708d2e4adz5HM24Fb4TDspeUQXtiR_hl')
         return {
             "success": True,
             "message": "浏览器启动成功"
@@ -119,25 +118,25 @@ async def get_console_info():
 
 @router.post("/save-storage")
 async def save_storage(
-    storage_data: CookieCreate,  # 暂时复用CookieCreate schema，您可以根据需要创建新的schema
+    storage_data: StorageCreate,  
     db: AsyncSession = Depends(get_db_session),
-) -> CookieResponse:  # 同样可以创建新的response schema
+) -> StorageResponse:  
     try:
         # 直接保存请求体中的数据
         dao = StorageDAO(db)
         await dao.create_storage(
             domain=storage_data.domain,
             username=storage_data.username,
-            storage_data=storage_data.cookie_data,  # 使用请求体中的数据
+            storage_data=storage_data.storage_data,  # 使用请求体中的数据
         )
-        
-        return CookieResponse(
+        return StorageResponse(
             success=True,
             message="存储数据保存成功",
-            data=storage_data.cookie_data
+            data=storage_data.storage_data
         )
     except Exception as e:
-        return CookieResponse(
+        print(e)
+        return StorageResponse(
             success=False,
             message=f"存储数据保存失败: {str(e)}"
         )
@@ -147,24 +146,24 @@ async def get_storage(
     domain: str,
     username: str,
     db: AsyncSession = Depends(get_db_session),
-) -> CookieResponse:
+) -> StorageResponse:
     try:
         dao = StorageDAO(db)
         storage = await dao.get_storage(domain=domain, username=username)
         
         if not storage:
-            return CookieResponse(
+            return StorageResponse(
                 success=False,
                 message="未找到对应的存储记录"
             )
             
-        return CookieResponse(
+        return StorageResponse(
             success=True,
             message="存储数据获取成功",
             data=storage.storage_data
         )
     except Exception as e:
-        return CookieResponse(
+        return StorageResponse(
             success=False,
             message=f"存储数据获取失败: {str(e)}"
         ) 
