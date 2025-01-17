@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from chrome_auto_server.db.dependencies import get_db_session
 from chrome_auto_server.db.dao.cookie_dao import CookieDAO
+from chrome_auto_server.db.dao.storage_dao import StorageDAO
 from chrome_auto_server.web.api.chrome_auto.schemas import CookieCreate, CookieResponse
 
 router = APIRouter()
@@ -115,3 +116,71 @@ async def get_console_info():
             "success": False,
             "message": f"获取控制台信息失败: {str(e)}"
         } 
+
+@router.post("/save-storage")
+async def save_storage(
+    storage_data: CookieCreate,  # 暂时复用CookieCreate schema，您可以根据需要创建新的schema
+    db: AsyncSession = Depends(get_db_session),
+) -> CookieResponse:  # 同样可以创建新的response schema
+    try:
+        tab = browser.latest_tab
+        # 获取存储数据
+        storage_info = {}
+        
+        # 获取localStorage数据
+        js_code = '''
+            const storage = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                storage[key] = localStorage.getItem(key);
+            }
+            return storage;
+        '''
+        local_storage = tab.run_js(js_code)
+        storage_info['localStorage'] = local_storage
+        
+        # 保存数据
+        dao = StorageDAO(db)
+        await dao.create_storage(
+            domain=storage_data.domain,
+            username=storage_data.username,
+            storage_data=storage_info,
+        )
+        
+        return CookieResponse(
+            success=True,
+            message="存储数据保存成功",
+            data=storage_info
+        )
+    except Exception as e:
+        return CookieResponse(
+            success=False,
+            message=f"存储数据保存失败: {str(e)}"
+        )
+
+@router.get("/get-storage/{domain}/{username}")
+async def get_storage(
+    domain: str,
+    username: str,
+    db: AsyncSession = Depends(get_db_session),
+) -> CookieResponse:
+    try:
+        dao = StorageDAO(db)
+        storage = await dao.get_storage(domain=domain, username=username)
+        
+        if not storage:
+            return CookieResponse(
+                success=False,
+                message="未找到对应的存储记录"
+            )
+            
+        return CookieResponse(
+            success=True,
+            message="存储数据获取成功",
+            data=storage.storage_data
+        )
+    except Exception as e:
+        return CookieResponse(
+            success=False,
+            message=f"存储数据获取失败: {str(e)}"
+        ) 
