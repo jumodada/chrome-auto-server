@@ -119,12 +119,12 @@ async def save_storage(
     db: AsyncSession = Depends(get_db_session),
 ) -> StorageResponse:  
     try:
-        # 直接保存请求体中的数据
+        
         dao = StorageDAO(db)
         await dao.create_storage(
             domain=storage_data.domain,
             username=storage_data.username,
-            storage_data=storage_data.storage_data,  # 使用请求体中的数据
+            storage_data=storage_data.storage_data,  
         )
         return StorageResponse(
             success=True,
@@ -164,3 +164,48 @@ async def get_storage(
             success=False,
             message=f"存储数据获取失败: {str(e)}"
         ) 
+
+@router.post("/login/{domain}/{username}")
+async def login(
+    domain: str,
+    username: str,
+    db: AsyncSession = Depends(get_db_session),
+):
+    try:
+        
+        cookie_dao = CookieDAO(db)
+        cookie = await cookie_dao.get_cookie(domain=domain, username=username)
+        if not cookie:
+            return {
+                "success": False,
+                "message": "未找到对应的Cookie记录"
+            }
+            
+        
+        storage_dao = StorageDAO(db)
+        storage = await storage_dao.get_storage(domain=domain, username=username)
+        if not storage:
+            return {
+                "success": False,
+                "message": "未找到对应的Storage记录"
+            }
+        
+        tab = browser.latest_tab
+        
+        tab.get(url='https://buyin.jinritemai.com/mpa/account/login?log_out=1&type=24')
+         
+        for item in cookie.cookie_data:
+             tab.set.cookies(item)
+        for key, value in storage.storage_data.items():
+           tab.set.local_storage(key,value)
+                
+        return {
+            "success": True,
+            "message": "登录成功，Cookie和Storage数据已注入"
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"登录失败: {str(e)}"
+        } 

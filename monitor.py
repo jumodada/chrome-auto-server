@@ -85,14 +85,14 @@ class DyMonitor:
             logging.error(f"数据获取或发送失败: {str(e)}")
             return False
 
-    def run(self, interval=10):  # 修改默认间隔为10秒
+    def run(self, interval=1000):  # 修改默认间隔为10秒
         while True:
             try:
                 if self.browser is None:
                     self.start_browser()
                 success = self.get_and_send_data()
                 if not success:
-                    time.sleep(10)  # 失败后等待1分钟再重试
+                    time.sleep(20)  # 失败后等待1分钟再重试
                 else:
                     time.sleep(interval)  # 成功后等待10秒
                 
@@ -101,7 +101,7 @@ class DyMonitor:
                 if self.browser:
                     self.browser.quit()
                 self.browser = None
-                time.sleep(10)  # 出错后等待1分钟再重试
+                time.sleep(20)  # 出错后等待1分钟再重试
 
 if __name__ == "__main__":
     monitor = DyMonitor()
