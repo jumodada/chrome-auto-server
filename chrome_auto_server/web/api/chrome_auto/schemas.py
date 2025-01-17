@@ -4,7 +4,7 @@ from typing import Optional, Dict, Any, List, Union
 class CookieCreate(BaseModel):
     domain: str
     username: str
-    cookie_data: Dict[str, Any]
+    cookie_data: Dict[str, Any] | List[Dict[str, Any]]
 
 class CookieResponse(BaseModel):
     success: bool

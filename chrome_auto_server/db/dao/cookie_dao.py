@@ -12,7 +12,7 @@ class CookieDAO:
         self,
         domain: str,
         username: str,
-        cookie_data: List[any, any],
+        cookie_data: List[dict],
     ) -> CookieModel:
         """创建或更新Cookie记录"""
         query = select(CookieModel).where(
