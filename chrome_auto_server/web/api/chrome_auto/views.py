@@ -35,22 +35,19 @@ async def save_cookies(
     cookie_data: CookieCreate,
     db: AsyncSession = Depends(get_db_session),
 ) -> CookieResponse:
+    print(cookie_data)
     try:
-        tab = browser.latest_tab
-        cookies = tab.cookies()
-        # 将CookiesList转换为字典列表
-        
-        
         dao = CookieDAO(db)
         await dao.create_cookie(
             domain=cookie_data.domain,
             username=cookie_data.username,
-            cookie_data=cookies,
+            cookie_data=cookie_data.cookie_data,
         )
+
         return CookieResponse(
             success=True,
             message="Cookie保存成功",
-            data=cookies
+            data=cookie_data.cookie_data
         )
     except Exception as e:
         return CookieResponse(

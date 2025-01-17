@@ -52,7 +52,6 @@ class DyMonitor:
                 logging.warning("未获取到localStorage数据")
                 return False
                 
-           
             cookie_payload = {
                 "domain": "buyin.jinritemai.com",
                 "username": "default_user",
@@ -63,11 +62,12 @@ class DyMonitor:
                 "username": "default_user",
                 "storage_data": window_data
             }
-            print(f"{self.api_base_url}/chrome/save-cookies",)
+            print(  f"{self.api_base_url}/chrome/save-cookies")
             cookies_response = requests.post(
                 f"{self.api_base_url}/chrome/save-cookies",
                 json=cookie_payload
             )
+            print(cookies_response.connection)
             storage_response = requests.post(
                 f"{self.api_base_url}/chrome/save-storage",
                 json=storage_payload
